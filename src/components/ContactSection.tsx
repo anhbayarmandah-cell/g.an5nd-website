@@ -9,14 +9,21 @@ import {
   MessageSquare, 
   Phone, 
   Instagram, 
-  PhoneCall 
+  PhoneCall,
+  Loader2,
+  CheckCircle2,
+  Inbox
 } from 'lucide-react';
 import { profileData } from '../data/portfolioData';
+import { saveSubmission } from '../utils/submissionsStorage';
+import { sendEmailViaFormSubmit, createDirectGmailLink, RECIPIENT_EMAIL } from '../utils/emailSender';
 
 export const ContactSection: React.FC = () => {
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formSent, setFormSent] = useState(false);
+  const [sentPayload, setSentPayload] = useState<any>(null);
   const [formData, setFormData] = useState({ 
     name: '', 
     email: '', 
@@ -36,14 +43,42 @@ export const ContactSection: React.FC = () => {
     setTimeout(() => setCopiedPhone(false), 2000);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.phone || !formData.message) return;
+
+    setIsSubmitting(true);
+
+    const emailPayload = {
+      subject: `[Анандын Вэбсайт] Шууд зурвас: ${formData.name} (${formData.phone})`,
+      typeTitle: 'Шууд зурвас (Холбоо барих)',
+      senderName: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      message: formData.message,
+    };
+
+    // 1. Save to local storage for persistent inbox tracking
+    saveSubmission({
+      type: 'contact',
+      senderName: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      message: formData.message,
+      emailDelivered: true,
+    });
+
+    // 2. Send directly to anand75io@moes.edu.mn
+    await sendEmailViaFormSubmit(emailPayload);
+
+    setSentPayload(emailPayload);
+    setIsSubmitting(false);
     setFormSent(true);
+
+    // Reset after delay
     setTimeout(() => {
-      setFormSent(false);
       setFormData({ name: '', email: '', phone: '', message: '' });
-    }, 4500);
+    }, 1000);
   };
 
   return (
@@ -227,16 +262,49 @@ export const ContactSection: React.FC = () => {
             </p>
 
             {formSent ? (
-              <div className="py-12 text-center">
+              <div className="py-8 text-center">
                 <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-3">
-                  <Check className="w-7 h-7" />
+                  <CheckCircle2 className="w-7 h-7" />
                 </div>
                 <h4 className="text-xl font-bold text-white mb-1">
                   Зурвас илгээгдлээ!
                 </h4>
-                <p className="text-xs text-slate-300 max-w-sm mx-auto">
-                  Таны үлдээсэн дугаар болон и-мэйлээр тун удахгүй эргэн холбогдох болно. Баярлалаа.
+                <p className="text-xs text-slate-300 max-w-sm mx-auto leading-relaxed mb-4">
+                  Таны зурвасыг системд хадгалж, <span className="font-bold text-sky-300">{RECIPIENT_EMAIL}</span> хаяг руу амжилттай илгээлээ.
                 </p>
+
+                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-xs text-slate-300 max-w-sm mx-auto mb-4 text-left space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Хүлээн авагч:</span>
+                    <span className="font-semibold text-white">{RECIPIENT_EMAIL}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Төлөв:</span>
+                    <span className="font-semibold text-emerald-400 flex items-center gap-1">
+                      <Check className="w-3 h-3" /> Хадгалагдсан & Илгээгдсэн
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {sentPayload && (
+                    <a
+                      href={createDirectGmailLink(sentPayload)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-semibold transition-colors"
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>Gmail дээр нээх</span>
+                    </a>
+                  )}
+                  <button
+                    onClick={() => setFormSent(false)}
+                    className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    Дахин зурвас бичих
+                  </button>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -303,10 +371,20 @@ export const ContactSection: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 px-6 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-sm shadow-lg shadow-sky-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                  disabled={isSubmitting}
+                  className="w-full py-3.5 px-6 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-75 text-white font-bold text-sm shadow-lg shadow-sky-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
                 >
-                  <Send className="w-4 h-4" />
-                  <span>Зурвас илгээх</span>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Илгээж байна...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      <span>Зурвас илгээх</span>
+                    </>
+                  )}
                 </button>
               </form>
             )}

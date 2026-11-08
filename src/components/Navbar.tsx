@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
-import { Menu, X, Mail, Phone, Instagram } from 'lucide-react';
+import { Menu, X, Mail, Phone, Instagram, Inbox } from 'lucide-react';
 import { profileData } from '../data/portfolioData';
 
 interface NavbarProps {
   currentNetlifySub: string;
   onOpenNetlifySettings: () => void;
   activeSection: string;
+  onOpenInbox?: () => void;
+  submissionsCount?: number;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-  activeSection
+  activeSection,
+  onOpenInbox,
+  submissionsCount = 0
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -85,6 +89,23 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>88712038</span>
             </a>
 
+            {/* Submissions Inbox Button */}
+            {onOpenInbox && (
+              <button
+                onClick={onOpenInbox}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors shadow-sm cursor-pointer"
+                title="Ирсэн хамтын ажиллагааны хүсэлт, шууд зурвасуудыг харах"
+              >
+                <Inbox className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                <span>Хүсэлтүүд</span>
+                {submissionsCount > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full bg-pink-500 text-white text-[10px] font-extrabold min-w-[18px] text-center">
+                    {submissionsCount}
+                  </span>
+                )}
+              </button>
+            )}
+
             {/* Email contact CTA */}
             <a
               href={`mailto:${profileData.email}`}
@@ -98,6 +119,20 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Mobile menu button */}
           <div className="flex lg:hidden items-center gap-1.5">
+            {onOpenInbox && (
+              <button
+                onClick={onOpenInbox}
+                className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 relative cursor-pointer"
+                title="Хүсэлтүүд"
+              >
+                <Inbox className="w-4 h-4" />
+                {submissionsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-pink-500 text-white text-[9px] font-bold flex items-center justify-center">
+                    {submissionsCount}
+                  </span>
+                )}
+              </button>
+            )}
             <a
               href="https://instagram.com/g.an5nd"
               target="_blank"
@@ -139,6 +174,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             ))}
             
             <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2">
+              {onOpenInbox && (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onOpenInbox();
+                  }}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-colors cursor-pointer"
+                >
+                  <Inbox className="w-4 h-4" />
+                  <span>Ирсэн хүсэлтүүд {submissionsCount > 0 ? `(${submissionsCount})` : ''}</span>
+                </button>
+              )}
+
               <a
                 href="https://instagram.com/g.an5nd"
                 target="_blank"

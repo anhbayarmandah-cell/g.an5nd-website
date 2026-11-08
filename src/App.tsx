@@ -9,14 +9,29 @@ import { PricingSection } from './components/PricingSection';
 import { PrinciplesSection } from './components/PrinciplesSection';
 import { MarketingCollabSection } from './components/MarketingCollabSection';
 import { ContactSection } from './components/ContactSection';
+import { SubmissionsInboxModal } from './components/SubmissionsInboxModal';
 import { Footer } from './components/Footer';
 import { profileData, DEFAULT_NETLIFY_SUBDOMAIN } from './data/portfolioData';
+import { getSubmissions } from './utils/submissionsStorage';
 import { Sparkles, Orbit } from 'lucide-react';
 
 export default function App() {
   const [netlifySubdomain] = useState<string>(DEFAULT_NETLIFY_SUBDOMAIN);
   const [heroTheme, setHeroTheme] = useState<'nival' | 'space'>('nival');
   const [activeSection, setActiveSection] = useState('home');
+  const [isInboxOpen, setIsInboxOpen] = useState(false);
+  const [submissionsCount, setSubmissionsCount] = useState(0);
+
+  // Sync submissions count
+  useEffect(() => {
+    const updateCount = () => {
+      const subs = getSubmissions();
+      setSubmissionsCount(subs.filter(s => s.status === 'new').length);
+    };
+    updateCount();
+    window.addEventListener('submissions_updated', updateCount);
+    return () => window.removeEventListener('submissions_updated', updateCount);
+  }, []);
 
   const handleExploreCollab = () => {
     const el = document.getElementById('collaboration');
@@ -56,6 +71,8 @@ export default function App() {
         currentNetlifySub={netlifySubdomain}
         onOpenNetlifySettings={() => {}}
         activeSection={activeSection}
+        onOpenInbox={() => setIsInboxOpen(true)}
+        submissionsCount={submissionsCount}
       />
 
       {/* Floating Theme Switcher between Nival & SpaceEdu */}
@@ -129,6 +146,12 @@ export default function App() {
 
       {/* 9. Footer (Хамгийн доор: "Your vision, my creativity. our impact.") */}
       <Footer />
+
+      {/* 10. Submissions Inbox Modal for Anand */}
+      <SubmissionsInboxModal
+        isOpen={isInboxOpen}
+        onClose={() => setIsInboxOpen(false)}
+      />
 
     </div>
   );
